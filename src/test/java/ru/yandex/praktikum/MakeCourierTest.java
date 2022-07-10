@@ -57,20 +57,36 @@ public class MakeCourierTest extends BaseTest {
         response.then().assertThat().body("ok", is(true));
     }
 
-    @Test
-    @DisplayName("Нельзя создать двух одинаковых курьеров")
-    public void makeIdenticalCouriersIsFailed() {
+    private Response makeCourier(String login, String password, String name) {
         MakeCourierRequest requestData = new MakeCourierRequest(login, password, name);
 
         Response response = given().header("Content-type", "application/json")
                 .relaxedHTTPSValidation().auth().oauth2(token)
                 .and().body(requestData).when().post("/api/v1/courier");
+        return response;
+    }
+
+    @Test
+    @DisplayName("Нельзя создать двух одинаковых курьеров")
+    public void makeIdenticalCouriersIsFailed() {
+        Response response = makeCourier(login, password, name);
         response.then().statusCode(201);
         response.then().assertThat().body("ok", is(true));
 
-        response = given().header("Content-type", "application/json")
-                .relaxedHTTPSValidation().auth().oauth2(token)
-                .and().body(requestData).when().post("/api/v1/courier");
+        response = makeCourier(login, password, name);
+        response.then().statusCode(409);
+        response.then().assertThat().body("message", equalTo("Этот логин уже используется"));
+    }
+
+    @Test
+    @DisplayName("Нельзя создать двух курьеров с разными именами и одинаковым логином")
+    public void makeCouriersWithSameLoginAndDifferentNames() {
+        Random rand = new Random();
+        Response response = makeCourier(login, password, name);
+        response.then().statusCode(201);
+        response.then().assertThat().body("ok", is(true));
+
+        response = makeCourier(login + rand.nextInt(100), password, name);
         response.then().statusCode(409);
         response.then().assertThat().body("message", equalTo("Этот логин уже используется"));
     }

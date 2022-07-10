@@ -54,11 +54,7 @@ public class LoginCourierTest extends BaseTest {
     @DisplayName("Успешный вход в учетную запись курьера")
     public void successLogin() {
         LoginRequest loginRequest = new LoginRequest(login, password);
-
-        Response response = given().header("Content-type", "application/json")
-                .relaxedHTTPSValidation().auth().oauth2(token)
-                .and().body(loginRequest).when().post("/api/v1/courier/login");
-
+        Response response = makeLoginRequest(loginRequest);
         response.then().statusCode(200);
     }
 
@@ -74,44 +70,49 @@ public class LoginCourierTest extends BaseTest {
         assertNotEquals(userId, null);
     }
 
-    @Test
-    @DisplayName("При попытке залогиниться не указав логин получаем ошибку 400")
-    public void loginWithoutLoginParameterFailed() {
+    private String removeParameterFromLoginJSON(String paramName) {
         LoginRequest loginRequest = new LoginRequest(login, password);
 
         Gson gson = new Gson();
         JsonElement jsonElement = gson.toJsonTree(loginRequest);
-        jsonElement.getAsJsonObject().remove("login");
+        jsonElement.getAsJsonObject().remove(paramName);
 
-        String json = gson.toJson(jsonElement);
+        return gson.toJson(jsonElement);
+    }
 
-
+    private Response makeLoginRequest(String json) {
         Response response = given().header("Content-type", "application/json")
                 .relaxedHTTPSValidation().auth().oauth2(token)
                 .and().body(json).when().post("/api/v1/courier/login");
+        return response;
+    }
 
-        response.then().statusCode(400);
-        response.then().body("message", equalTo("Недостаточно данных для входа"));
+    private Response makeLoginRequest(LoginRequest loginRequest) {
+        Response response = given().header("Content-type", "application/json")
+                .relaxedHTTPSValidation().auth().oauth2(token)
+                .and().body(loginRequest).when().post("/api/v1/courier/login");
+        return response;
+    }
+
+    private void checkStatusCodeAndErrorText(Response response, int code, String text) {
+        response.then().statusCode(code);
+        response.then().body("message", equalTo(text));
+    }
+
+    @Test
+    @DisplayName("При попытке залогиниться не указав логин получаем ошибку 400")
+    public void loginWithoutLoginParameterFailed() {
+        String json = removeParameterFromLoginJSON("login");
+        Response response = makeLoginRequest(json);
+        checkStatusCodeAndErrorText(response, 400, "Недостаточно данных для входа");
     }
 
     @Test
     @DisplayName("При попытке залогиниться не указав пароль получаем ошибку 400")
     public void loginWithoutPasswordParameterFailed() {
-        LoginRequest loginRequest = new LoginRequest(login, password);
-
-        Gson gson = new Gson();
-        JsonElement jsonElement = gson.toJsonTree(loginRequest);
-        jsonElement.getAsJsonObject().remove("password");
-
-        String json = gson.toJson(jsonElement);
-
-
-        Response response = given().header("Content-type", "application/json")
-                .relaxedHTTPSValidation().auth().oauth2(token)
-                .and().body(json).when().post("/api/v1/courier/login");
-
-        response.then().statusCode(400);
-        response.then().body("message", equalTo("Недостаточно данных для входа"));
+        String json = removeParameterFromLoginJSON("password");
+        Response response = makeLoginRequest(json);
+        checkStatusCodeAndErrorText(response, 400, "Недостаточно данных для входа");
     }
 
     @Test
@@ -120,13 +121,8 @@ public class LoginCourierTest extends BaseTest {
         Random rand = new Random();
         LoginRequest loginRequest = new LoginRequest("n"+rand.nextInt(),
                                                   "p"+rand.nextInt());
-
-        Response response = given().header("Content-type", "application/json")
-                .relaxedHTTPSValidation().auth().oauth2(token)
-                .and().body(loginRequest).when().post("/api/v1/courier/login");
-
-        response.then().statusCode(404);
-        response.then().body("message", equalTo("Учетная запись не найдена"));
+        Response response = makeLoginRequest(loginRequest);
+        checkStatusCodeAndErrorText(response, 404, "Учетная запись не найдена");
     }
 
     @Test
@@ -134,13 +130,8 @@ public class LoginCourierTest extends BaseTest {
     public void loginWithWrongLogin() {
         Random rand = new Random();
         LoginRequest loginRequest = new LoginRequest("n"+rand.nextInt(), password);
-
-        Response response = given().header("Content-type", "application/json")
-                .relaxedHTTPSValidation().auth().oauth2(token)
-                .and().body(loginRequest).when().post("/api/v1/courier/login");
-
-        response.then().statusCode(404);
-        response.then().body("message", equalTo("Учетная запись не найдена"));
+        Response response = makeLoginRequest(loginRequest);
+        checkStatusCodeAndErrorText(response, 404, "Учетная запись не найдена");
     }
 
     @Test
@@ -148,12 +139,7 @@ public class LoginCourierTest extends BaseTest {
     public void loginWithWrongPassword() {
         Random rand = new Random();
         LoginRequest loginRequest = new LoginRequest(login, "p"+rand.nextInt());
-
-        Response response = given().header("Content-type", "application/json")
-                .relaxedHTTPSValidation().auth().oauth2(token)
-                .and().body(loginRequest).when().post("/api/v1/courier/login");
-
-        response.then().statusCode(404);
-        response.then().body("message", equalTo("Учетная запись не найдена"));
+        Response response = makeLoginRequest(loginRequest);
+        checkStatusCodeAndErrorText(response, 404, "Учетная запись не найдена");
     }
 }

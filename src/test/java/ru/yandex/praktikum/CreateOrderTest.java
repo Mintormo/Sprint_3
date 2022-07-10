@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Random;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class CreateOrderTest extends BaseTest {
@@ -59,7 +63,7 @@ public class CreateOrderTest extends BaseTest {
                 "adr" + rand.nextInt(),
                 "mt" + rand.nextInt(),
                 "ph" + rand.nextInt(),
-                rand.nextInt(1, 100),
+                rand.nextInt(100),
                 new SimpleDateFormat("yyyy-MM-dd").format(new Date()),
                 "comm" + rand.nextInt(),
                 colors.toArray(new String[]{})
@@ -72,5 +76,7 @@ public class CreateOrderTest extends BaseTest {
         response.then().statusCode(201);
         CreateOrderResponse answer = response.as(CreateOrderResponse.class);
         track = answer.getTrack();
+        assertNotNull(track);
     }
+
 }
