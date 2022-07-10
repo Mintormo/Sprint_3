@@ -86,7 +86,7 @@ public class MakeCourierTest extends BaseTest {
         response.then().statusCode(201);
         response.then().assertThat().body("ok", is(true));
 
-        response = makeCourier(login + rand.nextInt(100), password, name);
+        response = makeCourier(login, password + rand.nextInt(100), name + rand.nextInt(100));
         response.then().statusCode(409);
         response.then().assertThat().body("message", equalTo("Этот логин уже используется"));
     }
